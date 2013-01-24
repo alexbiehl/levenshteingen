@@ -1,11 +1,8 @@
-
 import Data.Char
 import Data.List
 import Data.Word
 import Data.Bits
 import qualified Data.Map as M
-
-import Debug.Trace
 
 type Position = (Int, Int)
 
@@ -18,8 +15,6 @@ type KLength = Int
 type Bitmask = Int
 
 type CharacteristicVector = (Bitmask, KLength)
-
---type TransitionMap = M.Map (State, CharacteristicVector) (State, Int)
 
 fstBit :: Bitmask -> Int
 fstBit 0 = 0
@@ -63,7 +58,7 @@ baseState st = let smi = smallestI in ((map ((\minI (i, e) -> (i - minI, e)) smi
   where smallestI = foldl (\acc (i, e) -> min i acc) (2 * editDistance + 1) st
 
 delta1 :: State -> CharacteristicVector -> State
-delga1 [] _ = emptyState
+delta1 [] _ = emptyState
 delta1 st x = foldl f emptyState st
   where f acc p = reducedUnion acc $ delta editDistance p (x' p x)
         x' (i, e) (b, k) = let k' = min (editDistance - e + 1) (k - i) in
@@ -86,28 +81,12 @@ generate = generate' M.empty [emptyState, initialState]
 collect states k =  M.map (\m -> M.filter (\(_, len) -> len /= k) m) states
 
 main :: IO()
---main = mapM_ print $ M.toList generate --(delta'' initialState)
---main = case M.lookup [(0,0)] generate of 
---        (Just m) = prettyPrintMap m
---        Nothing  = undefined
---main = printM generate
 main = putStrLn $ printStates generate
---main = putStrLn (M.showTreeWith (\k v -> M.showTree v) True True generate)
-
---plan = M.foldWithKey (\k v acc -> M.foldWithKey ((\fromState (charVector, k) v acc -> (show fromState) ++ " -> " ++ (show charVector) ++ "(" ++ (show k) ++ ") " ++ (show v) ++ "\n") k) acc v) ""
-
---printStates = M.foldlWithKey f' "" 
---  where f' acc fromState toStateMap = M.foldlWithKey (g' fromState) acc toStateMap
---        g' fromState acc transition toState = acc ++ ((show fromState) ++ " -> " ++ (show transition) ++ " -> " ++ (show toState) ++ "\n")
 
 printStates :: M.Map State (M.Map (Int, Int) (State, Int)) -> String
 printStates = M.foldlWithKey f' ""
   where f' acc fromState transitions = M.foldlWithKey (g' fromState) acc transitions
         g' fromState acc charVector (toState, inc) = acc ++ (show fromState) ++ " --> " ++ (show charVector) ++ " --> (" ++ (show toState) ++ ", " ++ (show inc) ++ ")\n"   
-
-printM = M.mapWithKey (\st m -> prettyPrintMap m ) 
-prettyPrintMap :: M.Map (Int, Int) (State, Int) -> M.Map (Int, Int) (IO ())
-prettyPrintMap = M.mapWithKey (\(b, k) (st, inc) -> putStrLn ("  " ++ (show b) ++   " -> " ++ (show st)))
 
 editDistance :: EditDistance
 editDistance = 1
