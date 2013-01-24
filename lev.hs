@@ -19,52 +19,7 @@ type Bitmask = Int
 
 type CharacteristicVector = (Bitmask, KLength)
 
-type TransitionMap = M.Map (State, CharacteristicVector) (State, Int)
-
-type NameGen = String
-
-mkNameGen = "A"
-
-
-{-
-  A
-  B
-  C
-  D
-  E
-  F
-  G
-  H
-  I
-  J
-  K
-  L
-  M
-  N
-  O
-  P
-  Q
-  R
-  S
-  T
-  U
-  V
-  W
-  X 
-  Y
-  Z 
-  AA
-  AB
-  AC
-  AD
-  AE
-  AF
-  AG
-  AH
--}
-
-nextChar :: Char -> Char 
-nextChar c = chr ((ord c) + 1)
+--type TransitionMap = M.Map (State, CharacteristicVector) (State, Int)
 
 fstBit :: Bitmask -> Int
 fstBit 0 = 0
