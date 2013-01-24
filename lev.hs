@@ -46,7 +46,7 @@ delta n (i, e) (x, k)
   where y = fstBit x
 
 subsumes :: Position -> Position -> Bool
-subsumes (i, e) (j, f) = e < f && (abs j - i) <= f - e
+subsumes (i, e) (j, f) = e < f && (abs (j - i)) <= f - e
 
 reduce :: State -> State
 reduce state = foldl f state state
@@ -94,8 +94,9 @@ generateStateNames = f' M.empty names
 
 collect states k =  M.map (\m -> M.filter (\(_, len) -> len /= k) m) states
 
-main :: IO()
-main = let states = generate in putStrLn $ printStates (generateStateNames (M.keys states)) states
+--main :: IO()
+--main = let states = generate in putStrLn $ printStates (generateStateNames (M.keys states)) states
+main = let states = generate in putStrLn $ printStates' states
 
 printStates :: M.Map State String ->  M.Map State (M.Map (Int, Int) (State, Int)) -> String
 printStates names = M.foldlWithKey (f' names) ""
@@ -105,9 +106,14 @@ printStates names = M.foldlWithKey (f' names) ""
                             Just (s) -> s
                             Nothing -> ""
 
+printStates' ::  M.Map State (M.Map (Int, Int) (State, Int)) -> String
+printStates' = M.foldlWithKey f' ""
+  where f' acc fromState transitions = M.foldlWithKey (g' fromState) acc transitions
+        g' fromState acc charVector (toState, inc) = acc ++ (show (fromState)) ++ " --> " ++ (show charVector) ++ " --> (" ++ (show (toState)) ++ ", " ++ (show inc) ++ ")\n"  
+
 
 editDistance :: EditDistance
-editDistance = 1
+editDistance = 2
 
 emptyState :: State
 emptyState = []
