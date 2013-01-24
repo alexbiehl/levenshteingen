@@ -67,7 +67,7 @@ delga1 [] _ = emptyState
 delta1 st x = foldl f emptyState st
   where f acc p = reducedUnion acc $ delta editDistance p (x' p x)
         x' (i, e) (b, k) = let k' = min (editDistance - e + 1) (k - i) in
-                            ((shiftR b i) .&. (complement $ bit k'), k')
+                            ((shiftR b i) .&. ((bit k') - 1), k')
 
 delta' st = foldl f [] (powerSet editDistance)
   where f acc x = union acc [delta1 st x]
