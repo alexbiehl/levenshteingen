@@ -12,4 +12,4 @@ The output can be interpreted as
 
 "fromState" -> (x, k) -> ("toState", d)
 
-where x is the characteristic vector of W with length k = min(2 * n + 1, w - i) where i is the minimal boundary of current the state. The start state is always (A, 0), which means, state A with boundary 0. d means the increment to the current boundary. 
+where x is the characteristic vector of W with length k = min(2 * n + 1, w - i) and i denotes the minimal boundary of current the state. The start state is always (A, 0), which means, state A with boundary 0. d means the increment to the current boundary. 
