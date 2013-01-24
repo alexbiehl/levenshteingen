@@ -96,14 +96,3 @@ emptyState = []
 initialState :: State
 initialState = [(0, 0)]
 
-testState1 :: State
-testState1 = [(1, 0)]
-
-testState2 :: State
-testState2 = [(0, 1), (1, 1)]
-
-testState3 :: State
-testState3 = union testState1 testState2
-
-testState4 :: State
-testState4 = [(0, 3), (1, 3), (2, 3), (1, 2), (0, 4), (1, 4), (2,4), (3,4), (0,5), (1,5), (2,5), (3,5), (4,5)]
