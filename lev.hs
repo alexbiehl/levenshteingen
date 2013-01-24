@@ -23,12 +23,6 @@ names = [s | i <- [0..], let s = if i == 0 then "ERR" else toBase26 i]
                             c' = if c == '@' then 'Z' else c
                         in toBase26' ([c'] ++ s) (n `div` 26)
 
-fstBit :: Bitmask -> Int
-fstBit 0 = 0
-fstBit b = case (testBit b 0) of
-            True -> 1
-            False -> 1 + (fstBit (shiftR b 1))
-
 delta :: EditDistance -> Position -> CharacteristicVector -> State
 delta n (i, e) (x, k) 
   | k >= 2 && e <= n - 1 && x == 0  = [(i, e + 1), (i + 1, e + 1)]
@@ -44,9 +38,11 @@ delta n (i, e) (x, k)
   | k == 0 && e == n                = []
   | otherwise                       = []
   where y = fstBit x
+        fstBit 0 = 0
+        fstBit b = if testBit b 0 == True then 1 else 1 + fstBit (shiftR b 1)
 
 subsumes :: Position -> Position -> Bool
-subsumes (i, e) (j, f) = e < f && (abs (j - i)) <= f - e
+subsumes (i, e) (j, f) = e < f && abs (j - i) <= f - e
 
 reduce :: State -> State
 reduce state = foldl f state state
@@ -91,12 +87,8 @@ generateStateNames = f' M.empty names
     f' m _ []          = m
     f' m (n:nx) (s:st) = f' (M.insert s n m) nx st
 
-
-collect states k =  M.map (\m -> M.filter (\(_, len) -> len /= k) m) states
-
---main :: IO()
---main = let states = generate in putStrLn $ printStates (generateStateNames (M.keys states)) states
-main = let states = generate in putStrLn $ printStates' states
+main = let states = generate in putStrLn $ printStates (generateStateNames (M.keys states)) states
+--main = let states = generate in putStrLn $ printStates' states
 
 printStates :: M.Map State String ->  M.Map State (M.Map (Int, Int) (State, Int)) -> String
 printStates names = M.foldlWithKey (f' names) ""
