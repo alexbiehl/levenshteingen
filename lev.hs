@@ -1,3 +1,4 @@
+import Data.Char
 import Data.List
 import Data.Word
 import Data.Bits
@@ -14,6 +15,13 @@ type KLength = Int
 type Bitmask = Int
 
 type CharacteristicVector = (Bitmask, KLength)
+
+names = [s | i <- [0..], let s = if i == 0 then "ERR" else toBase26 i] 
+  where toBase26 = toBase26' ""
+        toBase26' s 0 = s
+        toBase26' s n = let c = chr ((n `mod` 26) + (ord 'A') - 1) 
+                            c' = if c == '@' then 'Z' else c
+                        in toBase26' ([c'] ++ s) (n `div` 26)
 
 fstBit :: Bitmask -> Int
 fstBit 0 = 0
@@ -77,15 +85,26 @@ generate = generate' M.empty [emptyState, initialState]
                                      rest = st `union` (map fst $ M.elems t) \\ (M.keys visited')                                  
                                   in generate' visited' rest
 
+generateStateNames :: [State] -> M.Map State String
+generateStateNames = f' M.empty names
+  where 
+    f' m _ []          = m
+    f' m (n:nx) (s:st) = f' (M.insert s n m) nx st
+
+
 collect states k =  M.map (\m -> M.filter (\(_, len) -> len /= k) m) states
 
 main :: IO()
-main = putStrLn $ printStates generate
+main = let states = generate in putStrLn $ printStates (generateStateNames (M.keys states)) states
 
-printStates :: M.Map State (M.Map (Int, Int) (State, Int)) -> String
-printStates = M.foldlWithKey f' ""
-  where f' acc fromState transitions = M.foldlWithKey (g' fromState) acc transitions
-        g' fromState acc charVector (toState, inc) = acc ++ (show fromState) ++ " --> " ++ (show charVector) ++ " --> (" ++ (show toState) ++ ", " ++ (show inc) ++ ")\n"   
+printStates :: M.Map State String ->  M.Map State (M.Map (Int, Int) (State, Int)) -> String
+printStates names = M.foldlWithKey (f' names) ""
+  where f' names acc fromState transitions = M.foldlWithKey (g' names fromState) acc transitions
+        g' names fromState acc charVector (toState, inc) = acc ++ (show (name names fromState)) ++ " --> " ++ (show charVector) ++ " --> (" ++ (show (name names toState)) ++ ", " ++ (show inc) ++ ")\n"   
+        name names state = case M.lookup state names of 
+                            Just (s) -> s
+                            Nothing -> ""
+
 
 editDistance :: EditDistance
 editDistance = 1
