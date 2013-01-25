@@ -20,7 +20,7 @@ names = [s | i <- [0..], let s = if i == 0 then "ERR" else toBase26 i]
   where toBase26 = toBase26' ""
         toBase26' s 0 = s
         toBase26' s n = let c = chr ((n `mod` 26) + (ord 'A') - 1) 
-                            c' = if c == '@' then 'Z' else c
+                            c' = if c == '@' then 'Z' else c -- fixme: oh boy
                         in toBase26' ([c'] ++ s) (n `div` 26)
 
 delta :: EditDistance -> Position -> CharacteristicVector -> State
