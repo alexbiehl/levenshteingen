@@ -2,6 +2,7 @@ import Data.Char
 import Data.List
 import Data.Word
 import Data.Bits
+import Data.Maybe
 import qualified Data.Map as M
 
 type Position = (Int, Int)
@@ -16,12 +17,20 @@ type Bitmask = Int
 
 type CharacteristicVector = (Bitmask, KLength)
 
+type StateNameMap = M.Map State String
+
+type StateDelta = (State, Int)
+
+type TransitionMap = M.Map CharacteristicVector StateDelta
+
+type StateTransitionMap = M.Map State TransitionMap
+
 names = [s | i <- [0..], let s = if i == 0 then "ERR" else toBase26 i] 
   where toBase26 = toBase26' ""
         toBase26' s 0 = s
         toBase26' s n = let c = chr ((n `mod` 26) + (ord 'A') - 1) 
                             c' = if c == '@' then 'Z' else c -- fixme: oh boy
-                        in toBase26' ([c'] ++ s) (n `div` 26)
+                        in toBase26' (c':s) (n `div` 26)
 
 delta :: EditDistance -> Position -> CharacteristicVector -> State
 delta n (i, e) (x, k) 
@@ -46,9 +55,9 @@ subsumes (i, e) (j, f) = e < f && abs (j - i) <= f - e
 
 reduce :: State -> State
 reduce state = foldl f state state
-  where f acc pos = case filter (\p -> p `subsumes` pos) acc of
-                      []        -> acc
-                      otherwise -> delete pos acc 
+  where f acc pos = case find (flip subsumes pos) acc of 
+                          Just _  -> delete pos acc
+                          Nothing -> acc 
 
 reducedUnion :: State -> State -> State
 reducedUnion st1 st2 = reduce $ union st1 st2
@@ -56,9 +65,10 @@ reducedUnion st1 st2 = reduce $ union st1 st2
 powerSet :: EditDistance -> [CharacteristicVector]
 powerSet n = [(mask, k) | k <- [0..(2 * n + 1)], mask <- [0..(2 ^ k) - 1]]
 
-baseState :: State -> (State, Int)
-baseState st = let smi = smallestI in ((map ((\minI (i, e) -> (i - minI, e)) smi) st), smi)
-  where smallestI = foldl (\acc (i, e) -> min i acc) (2 * editDistance + 1) st
+baseState :: State -> StateDelta
+baseState [] = ([], 0)
+baseState st = let lowi = lowf st in (map (\(i, e) -> (i - lowi, e)) st, lowi)
+  where lowf st = fst $ minimumBy (\a b -> compare (fst a) (fst b)) st
 
 delta1 :: State -> CharacteristicVector -> State
 delta1 [] _ = emptyState
@@ -66,9 +76,6 @@ delta1 st x = foldl f emptyState st
   where f acc p = reducedUnion acc $ delta editDistance p (x' p x)
         x' (i, e) (b, k) = let k' = min (editDistance - e + 1) (k - i) in
                             ((shiftR b i) .&. ((bit k') - 1), k')
-
-delta' st = foldl f [] (powerSet editDistance)
-  where f acc x = union acc [delta1 st x]
 
 delta'' st = foldl f M.empty (powerSet editDistance)
   where f acc x = M.insert x (baseState (delta1 st x)) acc
@@ -81,28 +88,22 @@ generate = generate' M.empty [emptyState, initialState]
                                      rest = st `union` (map fst $ M.elems t) \\ (M.keys visited')                                  
                                   in generate' visited' rest
 
-generateStateNames :: [State] -> M.Map State String
-generateStateNames = f' M.empty names
-  where 
-    f' m _ []          = m
-    f' m (n:nx) (s:st) = f' (M.insert s n m) nx st
+generateStateNames :: [State] -> [String] -> StateNameMap
+generateStateNames states names = M.fromList $ zip states names
 
-main = let states = generate in putStrLn $ printStates (generateStateNames (M.keys states)) states
---main = let states = generate in putStrLn $ printStates' states
+--main = let states = generate in putStrLn $ printStates (generateStateNames (M.keys states) names) states
+main = let states = generate in printStates'' (generateStateNames (M.keys states)  names) states
 
-printStates :: M.Map State String ->  M.Map State (M.Map (Int, Int) (State, Int)) -> String
-printStates names = M.foldlWithKey (f' names) ""
-  where f' names acc fromState transitions = M.foldlWithKey (g' names fromState) acc transitions
-        g' names fromState acc charVector (toState, inc) = acc ++ (show (name names fromState)) ++ " --> " ++ (show charVector) ++ " --> (" ++ (show (name names toState)) ++ ", " ++ (show inc) ++ ")\n"   
-        name names state = case M.lookup state names of 
-                            Just (s) -> s
-                            Nothing -> ""
+printStates'' :: StateNameMap -> StateTransitionMap -> IO()
+printStates'' names stateTransitions = mapM_ f $ M.assocs stateTransitions
+  where f (state, trans) = mapM_ (putStrLn . ((++) (id (name' state))) . ((++) "\t"))
+         $ map (\((b, k), (st, delta)) -> (show b) ++ "\t" ++ (show k) ++ "\t" ++ (id $ name' st) ++ "\t" ++ (show delta)) $ M.assocs trans
+        name' = fromJust . flip M.lookup names
 
-printStates' ::  M.Map State (M.Map (Int, Int) (State, Int)) -> String
-printStates' = M.foldlWithKey f' ""
-  where f' acc fromState transitions = M.foldlWithKey (g' fromState) acc transitions
-        g' fromState acc charVector (toState, inc) = acc ++ (show (fromState)) ++ " --> " ++ (show charVector) ++ " --> (" ++ (show (toState)) ++ ", " ++ (show inc) ++ ")\n"  
-
+--printStates' ::  StateTransitionMap -> String
+--printStates' = M.foldlWithKey f' ""
+--  where f' acc fromState transitions = M.foldlWithKey (g' fromState) acc transitions
+--        g' fromState acc charVector (toState, inc) = acc ++ (show (fromState)) ++ " --> " ++ (show charVector) ++ " --> (" ++ (id (toState)) ++ ", " ++ (show inc) ++ ")\n"  
 
 editDistance :: EditDistance
 editDistance = 2
