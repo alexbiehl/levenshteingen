@@ -25,12 +25,14 @@ type TransitionMap = M.Map CharacteristicVector StateDelta
 
 type StateTransitionMap = M.Map State TransitionMap
 
-names = [s | i <- [0..], let s = if i == 0 then "ERR" else toBase26 i] 
-  where toBase26 = toBase26' ""
-        toBase26' s 0 = s
-        toBase26' s n = let c = chr ((n `mod` 26) + (ord 'A') - 1) 
-                            c' = if c == '@' then 'Z' else c -- fixme: oh boy
-                        in toBase26' (c':s) (n `div` 26)
+names = [s | i <- [0..], let s = if i == 0 then "ERR" else (reverse . map int2let . base26) i] 
+    where
+        int2let 0 = 'Z'
+        int2let x = chr $ (x - 1) + ord 'A'
+        base26  0 = []
+        base26  i = let i' = (i `mod` 26)
+                        i'' = if i' == 0 then 26 else i'
+                    in seq i' (i' : base26 ((i - i'') `div` 26))
 
 delta :: EditDistance -> Position -> CharacteristicVector -> State
 delta n (i, e) (x, k) 
