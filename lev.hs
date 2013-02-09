@@ -27,6 +27,7 @@ type StateTransitionMap = M.Map State TransitionMap
 
 names = [s | i <- [0..], let s = if i == 0 then "ERR" else (reverse . map int2let . base26) i] 
     where
+        -- base26 encoding borrowes from xlsx package
         int2let 0 = 'Z'
         int2let x = chr $ (x - 1) + ord 'A'
         base26  0 = []
